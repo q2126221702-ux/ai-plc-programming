@@ -1,0 +1,434 @@
+{
+  "version": "1.0",
+  "categories": [
+    {
+      "name": "basic",
+      "description": "基础案例 - 电机启停、自锁、互锁、延时",
+      "examples": [
+        {
+          "id": "basic_01",
+          "title": "电机启停自锁",
+          "problem": "按下启动按钮后电机运行，按下停止按钮后电机停止。松开启动按钮后电机保持运行（自锁）。",
+          "dsl": {
+            "dsl_version": "1.0",
+            "variables": [
+              {"name": "Start_Btn", "type": "Bool", "scope": "input", "comment": "启动按钮"},
+              {"name": "Stop_Btn", "type": "Bool", "scope": "input", "comment": "停止按钮"},
+              {"name": "Motor_Run", "type": "Bool", "scope": "output", "comment": "电机运行"}
+            ],
+            "networks": [
+              {
+                "title": "电机启停自锁",
+                "nodes": [
+                  {"type": "contact", "tag": "Stop_Btn", "normallyOpen": true},
+                  {"type": "parallel", "branches": [
+                    {"nodes": [{"type": "contact", "tag": "Start_Btn", "normallyOpen": true}]},
+                    {"nodes": [{"type": "contact", "tag": "Motor_Run", "normallyOpen": true}]}
+                  ]},
+                  {"type": "coil", "tag": "Motor_Run"}
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "basic_02",
+          "title": "正反转互锁",
+          "problem": "电机正转和反转不能同时运行。正转时按反转无效，反转时按正转无效。需要互锁保护。",
+          "dsl": {
+            "dsl_version": "1.0",
+            "variables": [
+              {"name": "Fwd_Btn", "type": "Bool", "scope": "input", "comment": "正转按钮"},
+              {"name": "Rev_Btn", "type": "Bool", "scope": "input", "comment": "反转按钮"},
+              {"name": "Stop_Btn", "type": "Bool", "scope": "input", "comment": "停止按钮"},
+              {"name": "Motor_Fwd", "type": "Bool", "scope": "output", "comment": "正转"},
+              {"name": "Motor_Rev", "type": "Bool", "scope": "output", "comment": "反转"}
+            ],
+            "networks": [
+              {
+                "title": "正转（互锁反转）",
+                "nodes": [
+                  {"type": "contact", "tag": "Stop_Btn", "normallyOpen": true},
+                  {"type": "contact", "tag": "Motor_Rev", "normallyOpen": false},
+                  {"type": "parallel", "branches": [
+                    {"nodes": [{"type": "contact", "tag": "Fwd_Btn", "normallyOpen": true}]},
+                    {"nodes": [{"type": "contact", "tag": "Motor_Fwd", "normallyOpen": true}]}
+                  ]},
+                  {"type": "coil", "tag": "Motor_Fwd"}
+                ]
+              },
+              {
+                "title": "反转（互锁正转）",
+                "nodes": [
+                  {"type": "contact", "tag": "Stop_Btn", "normallyOpen": true},
+                  {"type": "contact", "tag": "Motor_Fwd", "normallyOpen": false},
+                  {"type": "parallel", "branches": [
+                    {"nodes": [{"type": "contact", "tag": "Rev_Btn", "normallyOpen": true}]},
+                    {"nodes": [{"type": "contact", "tag": "Motor_Rev", "normallyOpen": true}]}
+                  ]},
+                  {"type": "coil", "tag": "Motor_Rev"}
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "basic_03",
+          "title": "延时启动",
+          "problem": "按下启动按钮3秒后电机才运行。松开按钮电机立即停止。",
+          "dsl": {
+            "dsl_version": "1.0",
+            "variables": [
+              {"name": "Start_Btn", "type": "Bool", "scope": "input", "comment": "启动按钮"},
+              {"name": "Motor_Run", "type": "Bool", "scope": "output", "comment": "电机运行"},
+              {"name": "Delay_Timer", "type": "Timer", "scope": "internal", "timer_type": "TON", "preset": "T#3S", "comment": "3秒延时"}
+            ],
+            "networks": [
+              {
+                "title": "延时控制",
+                "nodes": [
+                  {"type": "contact", "tag": "Start_Btn", "normallyOpen": true},
+                  {"type": "ton", "instance": "Delay_Timer", "pt": "T#3S"}
+                ]
+              },
+              {
+                "title": "电机输出",
+                "nodes": [
+                  {"type": "contact", "tag": "Delay_Timer.Q", "normallyOpen": true},
+                  {"type": "coil", "tag": "Motor_Run"}
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "basic_04",
+          "title": "延时停止",
+          "problem": "按下启动按钮电机立即运行。松开按钮后电机继续运行5秒后停止。",
+          "dsl": {
+            "dsl_version": "1.0",
+            "variables": [
+              {"name": "Start_Btn", "type": "Bool", "scope": "input", "comment": "启动按钮"},
+              {"name": "Motor_Run", "type": "Bool", "scope": "output", "comment": "电机运行"},
+              {"name": "Off_Delay", "type": "Timer", "scope": "internal", "timer_type": "TOF", "preset": "T#5S", "comment": "5秒断开延时"}
+            ],
+            "networks": [
+              {
+                "title": "断开延时控制",
+                "nodes": [
+                  {"type": "contact", "tag": "Start_Btn", "normallyOpen": true},
+                  {"type": "tof", "instance": "Off_Delay", "pt": "T#5S"}
+                ]
+              },
+              {
+                "title": "电机输出",
+                "nodes": [
+                  {"type": "contact", "tag": "Off_Delay.Q", "normallyOpen": true},
+                  {"type": "coil", "tag": "Motor_Run"}
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "intermediate",
+      "description": "中级案例 - 流水线、计数、循环",
+      "examples": [
+        {
+          "id": "inter_01",
+          "title": "计数循环控制",
+          "problem": "电机正转到达B点后停止3秒，然后反转回到A点。循环5次后完全停止。",
+          "dsl": {
+            "dsl_version": "1.0",
+            "variables": [
+              {"name": "Start_Btn", "type": "Bool", "scope": "input", "comment": "启动按钮"},
+              {"name": "Limit_B", "type": "Bool", "scope": "input", "comment": "B点限位"},
+              {"name": "Limit_A", "type": "Bool", "scope": "input", "comment": "A点限位"},
+              {"name": "Motor_Fwd", "type": "Bool", "scope": "output", "comment": "正转"},
+              {"name": "Motor_Rev", "type": "Bool", "scope": "output", "comment": "反转"},
+              {"name": "Cycle_Done", "type": "Bool", "scope": "internal", "comment": "循环完成"},
+              {"name": "At_B", "type": "Bool", "scope": "internal", "comment": "到达B点"},
+              {"name": "Delay_Timer", "type": "Timer", "scope": "internal", "timer_type": "TON", "preset": "T#3S", "comment": "3秒延时"},
+              {"name": "Cycle_Counter", "type": "Counter", "scope": "internal", "counter_type": "CTU", "preset": "5", "comment": "循环计数"}
+            ],
+            "networks": [
+              {
+                "title": "正转运行",
+                "nodes": [
+                  {"type": "contact", "tag": "Start_Btn", "normallyOpen": true},
+                  {"type": "contact", "tag": "Cycle_Done", "normallyOpen": false},
+                  {"type": "contact", "tag": "At_B", "normallyOpen": false},
+                  {"type": "parallel", "branches": [
+                    {"nodes": [{"type": "contact", "tag": "Start_Btn", "normallyOpen": true}]},
+                    {"nodes": [{"type": "contact", "tag": "Motor_Fwd", "normallyOpen": true}]}
+                  ]},
+                  {"type": "coil", "tag": "Motor_Fwd"}
+                ]
+              },
+              {
+                "title": "到达B点",
+                "nodes": [
+                  {"type": "contact", "tag": "Limit_B", "normallyOpen": true},
+                  {"type": "set", "tag": "At_B"}
+                ]
+              },
+              {
+                "title": "B点延时",
+                "nodes": [
+                  {"type": "contact", "tag": "At_B", "normallyOpen": true},
+                  {"type": "ton", "instance": "Delay_Timer", "pt": "T#3S"}
+                ]
+              },
+              {
+                "title": "延时后反转",
+                "nodes": [
+                  {"type": "contact", "tag": "Delay_Timer.Q", "normallyOpen": true},
+                  {"type": "contact", "tag": "Cycle_Done", "normallyOpen": false},
+                  {"type": "coil", "tag": "Motor_Rev"}
+                ]
+              },
+              {
+                "title": "回到A点计数",
+                "nodes": [
+                  {"type": "contact", "tag": "Limit_A", "normallyOpen": true},
+                  {"type": "contact", "tag": "Motor_Rev", "normallyOpen": true},
+                  {"type": "ctu", "instance": "Cycle_Counter", "pv": "5"},
+                  {"type": "reset", "tag": "At_B"}
+                ]
+              },
+              {
+                "title": "循环完成",
+                "nodes": [
+                  {"type": "contact", "tag": "Cycle_Counter.Q", "normallyOpen": true},
+                  {"type": "set", "tag": "Cycle_Done"}
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "inter_02",
+          "title": "流水线传送带控制",
+          "problem": "传送带1启动后延时2秒启动传送带2，传送带2启动后延时2秒启动传送带3。停止时传送带3先停，延时2秒停传送带2，再延时2秒停传送带1。",
+          "dsl": {
+            "dsl_version": "1.0",
+            "variables": [
+              {"name": "Start_Btn", "type": "Bool", "scope": "input", "comment": "启动按钮"},
+              {"name": "Stop_Btn", "type": "Bool", "scope": "input", "comment": "停止按钮"},
+              {"name": "Belt1", "type": "Bool", "scope": "output", "comment": "传送带1"},
+              {"name": "Belt2", "type": "Bool", "scope": "output", "comment": "传送带2"},
+              {"name": "Belt3", "type": "Bool", "scope": "output", "comment": "传送带3"},
+              {"name": "Running", "type": "Bool", "scope": "internal", "comment": "系统运行"},
+              {"name": "Stopping", "type": "Bool", "scope": "internal", "comment": "系统停止中"},
+              {"name": "Start_Delay1", "type": "Timer", "scope": "internal", "timer_type": "TON", "preset": "T#2S", "comment": "启动延时1"},
+              {"name": "Start_Delay2", "type": "Timer", "scope": "internal", "timer_type": "TON", "preset": "T#2S", "comment": "启动延时2"},
+              {"name": "Stop_Delay1", "type": "Timer", "scope": "internal", "timer_type": "TON", "preset": "T#2S", "comment": "停止延时1"},
+              {"name": "Stop_Delay2", "type": "Timer", "scope": "internal", "timer_type": "TON", "preset": "T#2S", "comment": "停止延时2"}
+            ],
+            "networks": [
+              {
+                "title": "系统运行",
+                "nodes": [
+                  {"type": "contact", "tag": "Stop_Btn", "normallyOpen": true},
+                  {"type": "parallel", "branches": [
+                    {"nodes": [{"type": "contact", "tag": "Start_Btn", "normallyOpen": true}]},
+                    {"nodes": [{"type": "contact", "tag": "Running", "normallyOpen": true}]}
+                  ]},
+                  {"type": "coil", "tag": "Running"}
+                ]
+              },
+              {
+                "title": "传送带1",
+                "nodes": [
+                  {"type": "contact", "tag": "Running", "normallyOpen": true},
+                  {"type": "coil", "tag": "Belt1"}
+                ]
+              },
+              {
+                "title": "启动延时1",
+                "nodes": [
+                  {"type": "contact", "tag": "Belt1", "normallyOpen": true},
+                  {"type": "ton", "instance": "Start_Delay1", "pt": "T#2S"}
+                ]
+              },
+              {
+                "title": "传送带2",
+                "nodes": [
+                  {"type": "contact", "tag": "Start_Delay1.Q", "normallyOpen": true},
+                  {"type": "coil", "tag": "Belt2"}
+                ]
+              },
+              {
+                "title": "启动延时2",
+                "nodes": [
+                  {"type": "contact", "tag": "Belt2", "normallyOpen": true},
+                  {"type": "ton", "instance": "Start_Delay2", "pt": "T#2S"}
+                ]
+              },
+              {
+                "title": "传送带3",
+                "nodes": [
+                  {"type": "contact", "tag": "Start_Delay2.Q", "normallyOpen": true},
+                  {"type": "coil", "tag": "Belt3"}
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "advanced",
+      "description": "高级案例 - 顺控、状态机、多工位",
+      "examples": [
+        {
+          "id": "adv_01",
+          "title": "顺控-水箱控制",
+          "problem": "步骤1：注水直到高液位。步骤2：加热10秒。步骤3：排水直到低液位。然后返回步骤1。",
+          "dsl": {
+            "dsl_version": "1.0",
+            "variables": [
+              {"name": "High_Level", "type": "Bool", "scope": "input", "comment": "高液位"},
+              {"name": "Low_Level", "type": "Bool", "scope": "input", "comment": "低液位"},
+              {"name": "Fill_Valve", "type": "Bool", "scope": "output", "comment": "注水阀"},
+              {"name": "Heater", "type": "Bool", "scope": "output", "comment": "加热器"},
+              {"name": "Drain_Valve", "type": "Bool", "scope": "output", "comment": "排水阀"},
+              {"name": "Step1", "type": "Bool", "scope": "internal", "comment": "注水步"},
+              {"name": "Step2", "type": "Bool", "scope": "internal", "comment": "加热步"},
+              {"name": "Step3", "type": "Bool", "scope": "internal", "comment": "排水步"},
+              {"name": "Heat_Timer", "type": "Timer", "scope": "internal", "timer_type": "TON", "preset": "T#10S", "comment": "加热定时"}
+            ],
+            "networks": [
+              {
+                "title": "步骤1-注水",
+                "nodes": [
+                  {"type": "contact", "tag": "Step1", "normallyOpen": true},
+                  {"type": "coil", "tag": "Fill_Valve"}
+                ]
+              },
+              {
+                "title": "步骤1→2转换",
+                "nodes": [
+                  {"type": "contact", "tag": "Step1", "normallyOpen": true},
+                  {"type": "contact", "tag": "High_Level", "normallyOpen": true},
+                  {"type": "set", "tag": "Step2"},
+                  {"type": "reset", "tag": "Step1"}
+                ]
+              },
+              {
+                "title": "步骤2-加热",
+                "nodes": [
+                  {"type": "contact", "tag": "Step2", "normallyOpen": true},
+                  {"type": "coil", "tag": "Heater"},
+                  {"type": "ton", "instance": "Heat_Timer", "pt": "T#10S"}
+                ]
+              },
+              {
+                "title": "步骤2→3转换",
+                "nodes": [
+                  {"type": "contact", "tag": "Step2", "normallyOpen": true},
+                  {"type": "contact", "tag": "Heat_Timer.Q", "normallyOpen": true},
+                  {"type": "set", "tag": "Step3"},
+                  {"type": "reset", "tag": "Step2"}
+                ]
+              },
+              {
+                "title": "步骤3-排水",
+                "nodes": [
+                  {"type": "contact", "tag": "Step3", "normallyOpen": true},
+                  {"type": "coil", "tag": "Drain_Valve"}
+                ]
+              },
+              {
+                "title": "步骤3→1转换",
+                "nodes": [
+                  {"type": "contact", "tag": "Step3", "normallyOpen": true},
+                  {"type": "contact", "tag": "Low_Level", "normallyOpen": true},
+                  {"type": "set", "tag": "Step1"},
+                  {"type": "reset", "tag": "Step3"}
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "adv_02",
+          "title": "多工位加工控制",
+          "problem": "3个工位依次加工：工位1加工5秒，完成后传送到工位2；工位2加工3秒，完成后传送到工位3；工位3加工8秒，完成后输出成品。按下启动后循环运行。",
+          "dsl": {
+            "dsl_version": "1.0",
+            "variables": [
+              {"name": "Start_Btn", "type": "Bool", "scope": "input", "comment": "启动按钮"},
+              {"name": "Stop_Btn", "type": "Bool", "scope": "input", "comment": "停止按钮"},
+              {"name": "Station1_Active", "type": "Bool", "scope": "internal", "comment": "工位1加工中"},
+              {"name": "Station2_Active", "type": "Bool", "scope": "internal", "comment": "工位2加工中"},
+              {"name": "Station3_Active", "type": "Bool", "scope": "internal", "comment": "工位3加工中"},
+              {"name": "Conveyor", "type": "Bool", "scope": "output", "comment": "传送带"},
+              {"name": "Process1", "type": "Bool", "scope": "output", "comment": "工位1加工"},
+              {"name": "Process2", "type": "Bool", "scope": "output", "comment": "工位2加工"},
+              {"name": "Process3", "type": "Bool", "scope": "output", "comment": "工位3加工"},
+              {"name": "Timer1", "type": "Timer", "scope": "internal", "timer_type": "TON", "preset": "T#5S", "comment": "工位1定时"},
+              {"name": "Timer2", "type": "Timer", "scope": "internal", "timer_type": "TON", "preset": "T#3S", "comment": "工位2定时"},
+              {"name": "Timer3", "type": "Timer", "scope": "internal", "timer_type": "TON", "preset": "T#8S", "comment": "工位3定时"}
+            ],
+            "networks": [
+              {
+                "title": "工位1加工",
+                "nodes": [
+                  {"type": "contact", "tag": "Station1_Active", "normallyOpen": true},
+                  {"type": "coil", "tag": "Process1"},
+                  {"type": "ton", "instance": "Timer1", "pt": "T#5S"}
+                ]
+              },
+              {
+                "title": "工位1完成→传送→工位2",
+                "nodes": [
+                  {"type": "contact", "tag": "Station1_Active", "normallyOpen": true},
+                  {"type": "contact", "tag": "Timer1.Q", "normallyOpen": true},
+                  {"type": "set", "tag": "Station2_Active"},
+                  {"type": "reset", "tag": "Station1_Active"}
+                ]
+              },
+              {
+                "title": "工位2加工",
+                "nodes": [
+                  {"type": "contact", "tag": "Station2_Active", "normallyOpen": true},
+                  {"type": "coil", "tag": "Process2"},
+                  {"type": "ton", "instance": "Timer2", "pt": "T#3S"}
+                ]
+              },
+              {
+                "title": "工位2完成→传送→工位3",
+                "nodes": [
+                  {"type": "contact", "tag": "Station2_Active", "normallyOpen": true},
+                  {"type": "contact", "tag": "Timer2.Q", "normallyOpen": true},
+                  {"type": "set", "tag": "Station3_Active"},
+                  {"type": "reset", "tag": "Station2_Active"}
+                ]
+              },
+              {
+                "title": "工位3加工",
+                "nodes": [
+                  {"type": "contact", "tag": "Station3_Active", "normallyOpen": true},
+                  {"type": "coil", "tag": "Process3"},
+                  {"type": "ton", "instance": "Timer3", "pt": "T#8S"}
+                ]
+              },
+              {
+                "title": "工位3完成→输出→重新开始",
+                "nodes": [
+                  {"type": "contact", "tag": "Station3_Active", "normallyOpen": true},
+                  {"type": "contact", "tag": "Timer3.Q", "normallyOpen": true},
+                  {"type": "set", "tag": "Station1_Active"},
+                  {"type": "reset", "tag": "Station3_Active"}
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
